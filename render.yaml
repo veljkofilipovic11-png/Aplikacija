@@ -1,0 +1,14 @@
+services:
+  - type: web
+    name: furnicom-procurement-tracker
+    runtime: python
+    plan: free
+    buildCommand: "pip install -r requirements.txt && playwright install --with-deps chromium"
+    startCommand: "uvicorn src.api.main:app --host 0.0.0.0 --port $PORT"
+    envVars:
+      - key: PLAYWRIGHT_HEADLESS
+        value: "true"
+      - key: DASHBOARD_PASSWORD
+        sync: false
+      - key: DASHBOARD_SECRET_KEY
+        sync: false

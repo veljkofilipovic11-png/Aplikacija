@@ -131,22 +131,36 @@ uvicorn src.api.main:app --host 0.0.0.0 --port 8000
 Otvori `http://<ip-adresa-servera>:8000` u browseru na telefonu i prijavi
 se lozinkom iz `.env`.
 
-### Kako telefon da dodje do servera - dve opcije
+### Deploy na Render (besplatno) - korak po korak
 
-1. **Preporuceno: VPN (npr. [Tailscale](https://tailscale.com), besplatno za licnu upotrebu)** -
-   instaliras Tailscale i na masini gde server radi i na telefonu, i
-   dashboard-u pristupas preko privatne Tailscale adrese. Server nikad nije
-   izlozen javnom internetu, pa lozinka nije jedina linija odbrane.
-2. **Javni hosting** (VPS, Railway, Render, Fly.io...) - dashboard je
-   dostupan sa bilo kog mesta bez VPN-a, ali je izlozen internetu. U tom
-   slucaju obavezno:
-   - jaka, nasumicna `DASHBOARD_PASSWORD` (ne rec iz recnika),
-   - HTTPS (preko reverse proxy-ja kao Caddy/Nginx ili built-in TLS hosting provajdera) - bez HTTPS-a lozinka i token putuju u plain textu,
-   - razmisliti o IP allowlisti ako provajder to podrzava.
+U repo je dodat `render.yaml` koji Render cita automatski ("Blueprint"),
+tako da ne moras rucno da podesavas build/start komande.
 
-Autentifikacija je namenski jednostavna (jedna deljena lozinka, jer je ovo
-interni alat za jednog korisnika) - dovoljna je uz VPN ili HTTPS, ali nije
-zamena za pravi multi-user auth sistem ako se dashboard ikad deli sa vise ljudi.
+1. Otvori [render.com](https://render.com) i napravi nalog (najlakse preko GitHub naloga - istog kojim je povezan repo `veljkofilipovic11-png/aplikacija`).
+2. Klikni **New +** -> **Blueprint**.
+3. Izaberi repo `veljkofilipovic11-png/aplikacija` i granu `claude/public-procurement-tracker-8dr8u4`.
+4. Render prepoznaje `render.yaml` i prikazuje servis `furnicom-procurement-tracker` sa planom **Free**. Trazi da popunis dva polja (oznacena kao "secret"):
+   - `DASHBOARD_PASSWORD` -> izmisli jaku lozinku (npr. iz password menadzera), zapamti je za prijavu na telefonu.
+   - `DASHBOARD_SECRET_KEY` -> nasumican string, npr:
+     ```
+     4cb8d599fd43c2a9a139d9781c1fa4b14871bd16240b215417531f256d8fc455
+     ```
+     (ovo je generisano samo za tebe, ne mora dalje da se cuva u tajnosti kao sto lozinka mora, ali slobodno zameni svojim ako zelis).
+5. Klikni **Apply** / **Deploy**. Prvi build traje 5-10 minuta (instalira i Chromium za Playwright).
+6. Kad build zavrsi, Render ti daje link oblika `https://furnicom-procurement-tracker.onrender.com` - otvori ga na telefonu i prijavi se lozinkom iz koraka 4.
+
+**Vazna ogranicenja besplatnog plana** (da ne bude iznenadjenje):
+
+- **"Zaspivanje"**: posle ~15 minuta bez saobracaja servis se gasi; sledece otvaranje na telefonu ceka 30-60s dok se "probudi". Normalno za povremenu proveru, nije prakticno za nesto sto mora da odgovori trenutno.
+- **Fajl-sistem se brise pri svakom restartu/spavanju** - besplatan plan nema trajni disk, sto znaci da SQLite baza (`data/tenders.db`) i preuzeti PDF-ovi **nestaju svaki put kad se servis ugasi i ponovo probudi**. Za sada (dok testiramo KORAK 1+2 i sam dashboard) to nije opasno - najgore sto se desi je da se isti tenderi ponovo prikazu/preuzmu. Ali **pre nego sto ukljucimo KORAK 4 (notifikacije)**, moramo ovo resiti, jer bi inace mogao da dobijes duplirane notifikacije za isti tender - najjednostavnije resenje tada je Render Starter plan (~7$/mesec) + mali disk (~1$/mesec) da baza ostane trajna. Javi mi kad stignemo do tog koraka pa prebacujemo.
+- **Playwright (Chromium) trosi dosta RAM-a** na masini koja ima samo 512MB - moguce je da pretraga povremeno pukne zbog nedostatka memorije. Ako se to desava redovno, to je znak da je vreme za placeni plan.
+
+### Alternative (kasnije, ako free plan postane ogranicavajuc)
+
+- **Tvoj racunar + [Tailscale](https://tailscale.com)** (besplatan VPN) - server radi na tvojoj masini, bez "spavanja" i bez ogranicenja diska, ali racunar mora da bude upaljen.
+- **Placen VPS** (Hetzner/DigitalOcean, ~5€/mesec) - uvek upaljen, trajan disk, bez "budjenja". Najbolja opcija kad sistem pocne da radi svako jutro u produkciji.
+
+U svim slucajevima vazi: obavezno jaka `DASHBOARD_PASSWORD` i HTTPS (Render/Railway/Fly.io ga daju automatski; kod VPS-a ili Tailscale-a ga sam podesavas ili se oslanjas na VPN enkripciju). Autentifikacija dashboard-a je namerno jednostavna (jedna deljena lozinka, jer je ovo interni alat za jednog korisnika) - nije zamena za pravi multi-user auth sistem ako se dashboard ikad deli sa vise ljudi.
 
 ### API pregled
 
