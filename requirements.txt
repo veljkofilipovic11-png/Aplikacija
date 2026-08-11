@@ -1,0 +1,20 @@
+# --- KORAK 1: Data Collector (pretraga portala) ---
+playwright>=1.45          # headless Chromium - jedini pouzdan nacin da se "odigra" DevExpress grid na portalu
+httpx[http2]>=0.27        # brz HTTP klijent za detalje tendera i preuzimanje PDF-ova (bez browsera)
+beautifulsoup4>=4.12      # parsiranje HTML detalj-stranice tendera (VIEWSTATE, uiUserToken, linkovi ka dokumentima)
+tenacity>=8.2             # retry/backoff za mrezne pozive
+
+# --- KORAK 2: PDF Downloader & Text Extractor ---
+pdfplumber>=0.11          # ekstrakcija teksta iz konkursne dokumentacije (PDF)
+
+# --- Zajednicko ---
+python-dotenv>=1.0        # ucitavanje .env konfiguracije
+
+# --- KORAK 3 (kasnije): AI Evaluator ---
+openai>=1.40
+
+# --- KORAK 4 (kasnije): Notifikacije ---
+python-telegram-bot>=21.0
+
+# --- Orkestracija / dnevni raspored (kasnije) ---
+APScheduler>=3.10
