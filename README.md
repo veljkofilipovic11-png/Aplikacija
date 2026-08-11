@@ -9,6 +9,7 @@ relevantnosti i notifikacije.
 
 - [x] KORAK 1 - Data Collector (pretraga po CPV kodovima)
 - [x] KORAK 2 - PDF Downloader & Text Extractor
+- [x] Mobilni dashboard (pregled tendera, rucno pokretanje, podesavanja sa telefona)
 - [ ] KORAK 3 - AI Evaluator (OpenAI `gpt-4o-mini`)
 - [ ] KORAK 4 - Notification System (Telegram / email)
 - [ ] Dnevni raspored (APScheduler / cron)
@@ -16,7 +17,7 @@ relevantnosti i notifikacije.
 ## Arhitektura
 
 ```
-config/settings.py         konfiguracija, CPV kodovi, .env ucitavanje
+config/settings.py         konfiguracija, CPV kodovi, dashboard lozinka, .env ucitavanje
 src/collector/
   models.py                 TenderSummary / TenderDocument / Tender
   http_client.py             httpx klijent za sve sto NIJE JS-renderovano (detalji, PDF)
@@ -25,7 +26,12 @@ src/collector/
 src/documents/
   downloader.py               preuzimanje PDF priloga (GetDocument.ashx)
   extractor.py                 pdfplumber ekstrakcija teksta iz PDF-a
-src/storage/db.py            SQLite evidencija vec obradjenih tendera (dedupe)
+src/storage/db.py            SQLite: tenderi, podesavanja (CPV/prag/pauza), istorija pokretanja
+src/pipeline.py             jedina putanja pokretanja pretrage - koristi je CLI i dashboard
+src/api/
+  main.py                    FastAPI app (login, tenderi, podesavanja, pokretanje pretrage)
+  auth.py                     lozinka -> potpisan token (Bearer), za pristup sa telefona
+static/                     mobilni dashboard (obican HTML/JS, bez build koraka)
 scripts/run_collector.py     CLI za testiranje Koraka 1+2 end-to-end
 ```
 
@@ -105,3 +111,54 @@ SCRAPINGBEE_API_KEY=...
 
 `http_client.py` vec ima logiku da u tom slucaju automatski provuce sve
 zahteve kroz ScrapingBee/ZenRows API bez izmene ostatka koda.
+
+## Mobilni dashboard (upravljanje sa telefona)
+
+Jednostavna web stranica (radi u bilo kom mobilnom browseru) za pregled
+tendera, rucno pokretanje pretrage i izmenu podesavanja (CPV kodovi, prag
+relevantnosti, pauza) - bez potrebe da se dira server ili `.env`.
+
+### Pokretanje
+
+```bash
+# u .env obavezno podesi:
+#   DASHBOARD_PASSWORD=<jaka lozinka>
+#   DASHBOARD_SECRET_KEY=<generisi: python -c "import secrets; print(secrets.token_hex(32))">
+
+uvicorn src.api.main:app --host 0.0.0.0 --port 8000
+```
+
+Otvori `http://<ip-adresa-servera>:8000` u browseru na telefonu i prijavi
+se lozinkom iz `.env`.
+
+### Kako telefon da dodje do servera - dve opcije
+
+1. **Preporuceno: VPN (npr. [Tailscale](https://tailscale.com), besplatno za licnu upotrebu)** -
+   instaliras Tailscale i na masini gde server radi i na telefonu, i
+   dashboard-u pristupas preko privatne Tailscale adrese. Server nikad nije
+   izlozen javnom internetu, pa lozinka nije jedina linija odbrane.
+2. **Javni hosting** (VPS, Railway, Render, Fly.io...) - dashboard je
+   dostupan sa bilo kog mesta bez VPN-a, ali je izlozen internetu. U tom
+   slucaju obavezno:
+   - jaka, nasumicna `DASHBOARD_PASSWORD` (ne rec iz recnika),
+   - HTTPS (preko reverse proxy-ja kao Caddy/Nginx ili built-in TLS hosting provajdera) - bez HTTPS-a lozinka i token putuju u plain textu,
+   - razmisliti o IP allowlisti ako provajder to podrzava.
+
+Autentifikacija je namenski jednostavna (jedna deljena lozinka, jer je ovo
+interni alat za jednog korisnika) - dovoljna je uz VPN ili HTTPS, ali nije
+zamena za pravi multi-user auth sistem ako se dashboard ikad deli sa vise ljudi.
+
+### API pregled
+
+| Endpoint | Opis |
+|---|---|
+| `POST /api/login` | `{"password": "..."}` -> `{"token": "..."}` |
+| `GET /api/tenders?min_score=7` | lista tendera (opciono filtrirano po AI oceni) |
+| `GET /api/tenders/{id}` | detalji jednog tendera + dokumenti |
+| `GET /api/settings` / `PUT /api/settings` | CPV kodovi, prag relevantnosti, pauza |
+| `POST /api/run` | pokrece pretragu u pozadini (409 ako je vec u toku) |
+| `GET /api/status` | da li je pretraga u toku, poslednje pokretanje, broj tendera |
+
+Kolona `relevance_score` u bazi je vec spremna za KORAK 3 (AI evaluator) -
+kad se doda, dashboard ce automatski prikazivati ocene i filter "Samo
+relevantni" bez ikakve izmene frontend-a.

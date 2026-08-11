@@ -10,6 +10,11 @@ pdfplumber>=0.11          # ekstrakcija teksta iz konkursne dokumentacije (PDF)
 # --- Zajednicko ---
 python-dotenv>=1.0        # ucitavanje .env konfiguracije
 
+# --- Mobilni dashboard (upravljanje sa telefona) ---
+fastapi>=0.112
+uvicorn[standard]>=0.30
+itsdangerous>=2.2         # potpisivanje login tokena za dashboard
+
 # --- KORAK 3 (kasnije): AI Evaluator ---
 openai>=1.40
 

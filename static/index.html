@@ -1,0 +1,91 @@
+<!doctype html>
+<html lang="sr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>Furnicom - Javne nabavke</title>
+  <link rel="stylesheet" href="/static/style.css" />
+</head>
+<body>
+  <div id="login-screen" class="screen">
+    <div class="login-card">
+      <h1>Furnicom Interiors</h1>
+      <p class="subtitle">Pracenje javnih nabavki</p>
+      <form id="login-form">
+        <input type="password" id="login-password" placeholder="Lozinka" autocomplete="current-password" required />
+        <button type="submit">Prijavi se</button>
+      </form>
+      <p id="login-error" class="error hidden"></p>
+    </div>
+  </div>
+
+  <div id="app-screen" class="screen hidden">
+    <header>
+      <h1>Furnicom - Javne nabavke</h1>
+      <button id="logout-btn" class="icon-btn" title="Odjava">Odjava</button>
+    </header>
+
+    <nav class="tabs">
+      <button class="tab-btn active" data-tab="tenders">Tenderi</button>
+      <button class="tab-btn" data-tab="run">Pretraga</button>
+      <button class="tab-btn" data-tab="settings">Podesavanja</button>
+    </nav>
+
+    <main>
+      <section id="tab-tenders" class="tab-panel active">
+        <div class="filter-row">
+          <label>
+            <input type="checkbox" id="filter-relevant" />
+            Samo relevantni (7+)
+          </label>
+          <button id="refresh-tenders" class="secondary-btn">Osvezi</button>
+        </div>
+        <div id="tenders-list" class="card-list">
+          <p class="empty-state">Ucitavanje...</p>
+        </div>
+      </section>
+
+      <section id="tab-run" class="tab-panel">
+        <div class="status-card">
+          <div class="status-row">
+            <span>Status:</span>
+            <strong id="run-status">-</strong>
+          </div>
+          <div class="status-row">
+            <span>Poslednje pokretanje:</span>
+            <strong id="last-run-time">-</strong>
+          </div>
+          <div class="status-row">
+            <span>Pronadjeno / novo:</span>
+            <strong id="last-run-counts">-</strong>
+          </div>
+          <div class="status-row">
+            <span>Ukupno tendera u bazi:</span>
+            <strong id="tender-count">-</strong>
+          </div>
+        </div>
+        <button id="run-btn" class="primary-btn">Pokreni pretragu sada</button>
+        <p id="run-message" class="hint"></p>
+      </section>
+
+      <section id="tab-settings" class="tab-panel">
+        <label class="field-label">CPV kodovi (jedan po redu: kod - naziv)</label>
+        <textarea id="cpv-codes" rows="8"></textarea>
+
+        <label class="field-label">Prag relevantnosti (1-10)</label>
+        <input type="number" id="relevance-threshold" min="1" max="10" />
+
+        <label class="switch-row">
+          <span>Pauziraj automatsku dnevnu pretragu</span>
+          <input type="checkbox" id="paused-toggle" />
+        </label>
+
+        <button id="save-settings-btn" class="primary-btn">Sacuvaj podesavanja</button>
+        <p id="settings-message" class="hint"></p>
+      </section>
+    </main>
+  </div>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>
